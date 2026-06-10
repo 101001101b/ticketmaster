@@ -1,0 +1,14 @@
+# Concert Ticket Benchmark – Numbered Seats
+# Seats: 1..20000
+# Format: BUY <producer_id> <seat_id> <request_id>
+
+BUY user00001 41 00001
+BUY user00002 42 00002
+BUY user00003 43 00003
+BUY user00004 44 00004
+BUY user00005 45 00005
+BUY user00006 46 00006
+BUY user00007 47 00007
+BUY user00008 48 00008
+BUY user00009 49 00009
+BUY user00010 40 00010

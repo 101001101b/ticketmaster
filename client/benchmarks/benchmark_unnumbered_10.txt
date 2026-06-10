@@ -1,0 +1,14 @@
+# Concert Ticket Benchmark – Unnumbered Seats
+# Total tickets: 20000
+# Format: BUY <producer_id> <request_id>
+
+BUY user00001 00001
+BUY user00002 00002
+BUY user00003 00003
+BUY user00004 00004
+BUY user00005 00005
+BUY user00006 00006
+BUY user00007 00007
+BUY user00008 00008
+BUY user00009 00009
+BUY user00010 00010

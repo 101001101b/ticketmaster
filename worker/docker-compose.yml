@@ -1,0 +1,29 @@
+services:
+  worker-direct:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: 172.31.22.55
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      REDIS_HOST: 172.31.22.55
+      MODE: direct
+      PORT: 8000
+    deploy:
+      replicas: 1
+    ports: 
+      - "8000-8100:8000"  
+
+  worker-indirect:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: 172.31.22.55
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      REDIS_HOST: 172.31.22.55
+      MODE: indirect
+    deploy:
+      replicas: 1

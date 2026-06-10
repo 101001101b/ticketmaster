@@ -1,0 +1,59 @@
+services:
+  # --------------------------
+  # Results Consumer
+  # --------------------------
+  results_consumer:
+    build:
+      context: ./results_consumer
+      dockerfile: Dockerfile
+    container_name: ticket-results-consumer
+    environment:
+      RABBITMQ_HOST: 54.87.4.214  # IP Infraestructura AWS
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      RESULTS_FILE: /app/results/results.jsonl
+    volumes:
+      - ./results:/app/results
+
+  # --------------------------
+  # Benchmark Producer (Direct Mode)
+  # --------------------------
+  producer-direct:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    environment:
+      MODE: direct
+      API_URL: http://54.87.4.214:80  # NGINX en AWS
+      RABBITMQ_HOST: 54.87.4.214
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      REDIS_HOST: 54.87.4.214
+      PRODUCER_WORKERS: 5
+      RESULTS_FILE: /app/results/benchmark_direct.jsonl
+    volumes:
+      - ./benchmarks:/app/benchmarks:ro
+      - ./results:/app/results
+    profiles:
+      - benchmark-direct
+
+  # --------------------------
+  # Benchmark Producer (Indirect Mode)
+  # --------------------------
+  producer-indirect:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    environment:
+      MODE: indirect
+      RABBITMQ_HOST: 54.87.4.214  # RabbitMQ en AWS
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      REDIS_HOST: 54.87.4.214
+      PRODUCER_WORKERS: 5
+      RESULTS_FILE: /app/results/benchmark_indirect.jsonl
+    volumes:
+      - ./benchmarks:/app/benchmarks:ro
+      - ./results:/app/results
+    profiles:
+      - benchmark-indirect
