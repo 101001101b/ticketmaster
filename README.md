@@ -20,6 +20,71 @@ Evalúa throughput, escalabilidad y consistencia entre ambos enfoques. Proyecto 
 
 ## Arquitectura
 
+```mermaid
+graph TD
+    %% Estilos Generales
+    classDef clientStyle fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
+    classDef vmaStyle fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085;
+    classDef vmbStyle fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
+    classDef storageStyle fill:#f8d7da,stroke:#721c24,stroke-width:2px,color:#721c24;
+
+    %% Componente Cliente (Localhost / Inyector)
+    subgraph Local [Entorno Cliente - Localhost]
+        C[Benchmark Producer<br/>5 Clientes Concurrentes]:::clientStyle
+    end
+
+    %% Infraestructura VM-A
+    subgraph VMA [AWS VM-A: Infraestructura Central]
+        NGINX[Proxy / Load Balancer<br/>NGINX:80]:::vmaStyle
+        RMQ[Message Broker<br/>RabbitMQ:5672]:::vmaStyle
+        
+        subgraph Colas [Colas AMQP]
+            Q1[(ticket_requests)]
+            Q2[(ticket_results)]
+        end
+        
+        Redis[(Backend de Consistencia<br/>Redis:6379)]:::storageStyle
+    end
+
+    %% Infraestructura VM-B
+    subgraph VMB [AWS VM-B: Capa de Computo]
+        subgraph PoolDirect [Pool Modo Directo]
+            W_Dir[Workers FastAPI<br/>Port 8000]:::vmbStyle
+        end
+        
+        subgraph PoolIndirect [Pool Modo Indirecto]
+            W_Ind[Workers Consumidores<br/>AMQP - competing consumers]:::vmbStyle
+        end
+    end
+
+    %% Flujos de Almacenamiento de Resultados
+    subgraph LocalResults [Resultados]
+        Cons[Results Consumer]:::clientStyle
+        File[JSONL Logs<br/>results/]
+    end
+
+    %% 1. Modo Directo
+    C -- "1a. HTTP POST Requests" --> NGINX
+    NGINX -- "1b. Balanceo Round-Robin" --> W_Dir
+    W_Dir -- "1c. Validacion Atomica (INCR / SETNX)" --> Redis
+    W_Dir -. "1d. HTTP 200 OK sincrono" .-> C
+    W_Dir -. "1e. BackgroundTask (Publica Acta)" .-> Q2
+
+    C -- "2a. Paso de Mensajes Fire-and-Forget" --> RMQ
+    RMQ --> Q1
+    Q1 -- "2b. Distribucion Eficiente (prefetch=1)" --> W_Ind
+    W_Ind -- "2c. Validacion Atomica (INCR / SETNX)" --> Redis
+    W_Ind -- "2d. Publica Confirmacion" --> Q2
+    
+    Q2 --> Cons
+    Cons --> File
+
+    class C,Cons clientStyle;
+    class NGINX,RMQ vmaStyle;
+    class W_Dir,W_Ind vmbStyle;
+    class Redis storageStyle;
+```
+
 ### Modo Directo (REST)
 ```
 Producer → NGINX:80 → Worker:8000 → Redis:6379
